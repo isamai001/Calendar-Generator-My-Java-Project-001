@@ -1,87 +1,76 @@
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.util.Locale;
 import java.util.Scanner;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class CalendarGenerator {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-
-        // Array to store the number of days in each month
-        int[] daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        String[] monthNames = {"January", "February", "March", "April", "May", "June",
-                               "July", "August", "September", "October", "November", "December"};
-        String[] weekDays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
-        // User input for month
-        System.out.print("Enter the month (1-12): ");
-        int month = scanner.nextInt();
-
-        // User input for the year
-        System.out.print("Enter the year: ");
+        
+        // Get user input for year and month
+        System.out.print("Please Enter the year: ");
         int year = scanner.nextInt();
-
-        // Adjust February for leap years
-        if (month == 2 && isLeapYear(year)) {
-            daysInMonth[1] = 29;  // Leap year adjustment
-        }
-
-        // Validate month input
-        if (month < 1 || month > 12) {
-            System.out.println("Invalid month! Please enter a value between 1 and 12.");
-            System.exit(0);
-        }
-
-        // Get the first day of the month
-        int startDay = getStartDay(year, month);
-
-        // Print the month name and headers
-        System.out.println("\n " + monthNames[month - 1] + " " + year);
-        for (String day : weekDays) {
-            System.out.printf("%4s", day);
-        }
-        System.out.println("\n---------------------------");
-
-        // Print leading spaces for the first row
+        System.out.print("Please Enter the month (1-12): ");
+        int month = scanner.nextInt();
+        
+        YearMonth yearMonth = YearMonth.of(year, month);
+        int daysInMonth = yearMonth.lengthOfMonth();
+        
+        System.out.println("\n" + yearMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + year);
+        System.out.println("Sun Mon Tue Wed Thu Fri Sat");
+        
+        LocalDate firstDay = yearMonth.atDay(1);
+        int startDay = firstDay.getDayOfWeek().getValue() % 7;
+        
         for (int i = 0; i < startDay; i++) {
-            System.out.printf("%4s", " ");
+            System.out.print("    ");
         }
-
-        // Print calendar days
-        for (int day = 1; day <= daysInMonth[month - 1]; day++) {
-            System.out.printf("%4d", day);
-            if ((day + startDay) % 7 == 0) { // New line at the end of each week
+        
+        LocalDate today = LocalDate.now();
+        for (int day = 1; day <= daysInMonth; day++) {
+            LocalDate currentDay = yearMonth.atDay(day);
+            String dayStr = (currentDay.equals(today)) ? "[" + day + "]" : String.format("%2d ", day);
+            System.out.printf(dayStr + " ");
+            
+            if ((startDay + day) % 7 == 0 || day == daysInMonth) {
                 System.out.println();
             }
         }
-
-        System.out.println(); // Move to the next line for better formatting
+        
+        // Save to a file
+        try (FileWriter writer = new FileWriter("calendar.txt")) {
+            writer.write("\n" + yearMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + year + "\n");
+            writer.write("Sun Mon Tue Wed Thu Fri Sat\n");
+            
+            for (int i = 0; i < startDay; i++) {
+                writer.write("    ");
+            }
+            
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate currentDay = yearMonth.atDay(day);
+                String dayStr = (currentDay.equals(today)) ? "[" + day + "]" : String.format("%2d ", day);
+                writer.write(dayStr + " ");
+                
+                if ((startDay + day) % 7 == 0 || day == daysInMonth) {
+                    writer.write("\n");
+                }
+            }
+            
+            writer.write("\nHolidays in Kenya:\n");
+            writer.write("- January 1: New Year’s Day\n");
+            writer.write("- June 1: Madaraka Day\n");
+            writer.write("- October 10: Huduma Day\n");
+            writer.write("- December 25: Christmas Day\n");
+            writer.write("- December 26: Boxing Day\n");
+            
+            System.out.println("\nCalendar saved to calendar.txt");
+        } catch (IOException e) {
+            System.out.println("Error saving file: " + e.getMessage());
+        }
+        
         scanner.close();
-    }
-
-    // Function to check if a year is a leap year
-    private static boolean isLeapYear(int year) {
-        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-    }
-
-    // Function to calculate the starting day of the month
-    private static int getStartDay(int year, int month) {
-        int totalDays = 0;
-
-        // Calculate total days from year 1900 to the given year
-        for (int i = 1900; i < year; i++) {
-            totalDays += (isLeapYear(i)) ? 366 : 365;
-        }
-
-        // Days in each month (adjusted for leap years)
-        int[] daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        if (isLeapYear(year)) {
-            daysInMonth[1] = 29;
-        }
-
-        // Add days for each month in the current year before the selected month
-        for (int i = 0; i < month - 1; i++) {
-            totalDays += daysInMonth[i];
-        }
-
-        // Start day of January 1, 1900 was Monday (index 1)
-        return (totalDays + 1) % 7;
     }
 }
